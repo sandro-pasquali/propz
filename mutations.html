@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Watch for Element attribute changes</title>
+	<script>
+	
+	window.onload = function() {
+
+	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+	
+	//	!webkit or firefox
+	//
+	if(!MutationObserver) {
+		try {
+			MutationObserver = function(func) {	
+			
+				var targets 	= {};
+				var id 			= 1;
+				var lastAtts 	= {};
+				var oldValue;
+
+				var observer = function(event) {
+				
+					var src 		= event.srcElement;
+					var propName 	= event.propertyName;
+					var propVal 	= src.getAttribute(propName);
+					
+					var elId = src.getAttribute("__MO__");
+					
+					oldValue = elId && lastAtts[elId][propName];
+					
+					func([{
+						type			: "attributes",
+						attributeName	: propName,
+						target			: src,
+						oldValue		: oldValue
+					}]);
+					
+					if(elId) {
+						lastAtts[elId][propName] = propVal;
+					}
+				};
+				
+				this.observe = function(t, config) {
+					
+					t.setAttribute("__MO__", ++id);
+					
+					targets[id] = t;
+					
+					var i = 0;
+					var attrs = t.attributes;
+					var len = attrs.length;
+					var attr;
+					
+					lastAtts[id] = {};
+					
+					for (; i < len; i++){
+						attr = attrs[i]
+						lastAtts[id][attr.nodeName] = attr.nodeValue;
+					}
+
+					targets[id].attachEvent("onpropertychange", observer);
+				}
+				
+				this.disconnect = function() {
+					for(var t in targets) {
+						targets[t].detachEvent("onpropertychange", observer);
+					}
+					lastAtts = null;
+				}
+			}
+		} catch(e) {
+			throw new Error("This browser is not supported.");
+		}
+	}
+	
+	//	Create new observer object
+	//
+	var observer = new MutationObserver(function(mutations) {
+		mutations.forEach(function(mutation) {
+			console.log(mutation);
+			for(var p in mutation) {
+				console.log(p + " = " + mutation[p]);
+			}
+		});    
+	});
+	
+	//	These are only relevant to non-IE implementations
+	//
+	var config = { 
+		attributes			: true, 
+		childList			: true, 
+		characterData		: true,
+		attributeOldValue	: true
+	}
+	
+	//	Watch for prop changes on an element
+	//
+	var target = document.querySelector('#target');
+	observer.observe(target, config);
+	
+	//	Fire some changes
+	//
+	target.setAttribute("name", "bar");
+	target.setAttribute("name", "baz");
+	 
+	// later, stop observing
+	setTimeout(function() {
+		observer.disconnect();
+		console.log("Nothing should be logged between here...");
+		target.setAttribute("name", "buz");
+		console.log("...and here.");
+	}, 5000);
+	
+	};
+	
+	</script>
+</head>
+<body>
+
+<div id="prefix">-</a><div id="target" name="foo">Hi</div><div id="suffix">-</div>
+
+</body>
+</html>
