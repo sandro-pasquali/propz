@@ -79,7 +79,6 @@
 	//
 	var observer = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
-			console.log(mutation);
 			for(var p in mutation) {
 				console.log(p + " = " + mutation[p]);
 			}
@@ -106,11 +105,15 @@
 	target.setAttribute("name", "baz");
 	 
 	// later, stop observing
+	//
 	setTimeout(function() {
+	
 		observer.disconnect();
+		
 		console.log("Nothing should be logged between here...");
 		target.setAttribute("name", "buz");
 		console.log("...and here.");
+		
 	}, 5000);
 	
 	};
